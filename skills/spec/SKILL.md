@@ -31,7 +31,9 @@ one-line fix you can describe in one acceptance criterion (write a single card d
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>` unless it is already set. Scripts live in `$FACTORY_PLUGIN_ROOT/scripts`.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`.
 1. **Gather context before asking anything.** Read `AGENTS.md`, `CONSTRAINTS.md`, the relevant code
    (Grep/Glob, `git log --oneline -20 -- <paths>`), existing specs, and prior learnings:
    `node "$FACTORY_PLUGIN_ROOT/scripts/learn.mjs" search --query "<topic words>"`.

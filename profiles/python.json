@@ -1,8 +1,21 @@
 {
   "name": "python",
   "description": "Python: Django, FastAPI, Flask, libraries and CLIs.",
-  "detect": { "anyFile": ["pyproject.toml", "requirements.txt", "setup.py", "setup.cfg"] },
-  "packageManager": { "lockfiles": { "uv.lock": "uv", "poetry.lock": "poetry" }, "default": "pip" },
+  "detect": {
+    "anyFile": [
+      "pyproject.toml",
+      "requirements.txt",
+      "setup.py",
+      "setup.cfg"
+    ]
+  },
+  "packageManager": {
+    "lockfiles": {
+      "uv.lock": "uv",
+      "poetry.lock": "poetry"
+    },
+    "default": "pip"
+  },
   "commands": {
     "install": "{pm_install}",
     "typecheck": "mypy .",
@@ -15,9 +28,32 @@
     "secrets": "gitleaks detect --redact --no-banner",
     "sast": "semgrep scan --config p/default --error --quiet"
   },
-  "pmInstall": { "uv": "uv sync", "poetry": "poetry install", "pip": "pip install -r requirements.txt" },
+  "pmInstall": {
+    "uv": "uv sync",
+    "poetry": "poetry install",
+    "pip": "pip install -r requirements.txt"
+  },
   "coverageReport": "coverage/lcov.info",
   "testFilePattern": "(^|/)(test_[^/]+\\.py|[^/]+_test\\.py|tests/.+\\.py)$",
-  "devServer": { "command": "", "url": "http://localhost:8000" },
-  "qaSurfaces": ["api", "cli", "browser"]
+  "devServer": {
+    "command": "",
+    "url": "http://localhost:8000"
+  },
+  "qaSurfaces": [
+    "api",
+    "cli",
+    "browser"
+  ],
+  "workerCommands": [
+    "python",
+    "python3",
+    "pytest",
+    "uv",
+    "pip",
+    "pip3",
+    "poetry",
+    "ruff",
+    "mypy",
+    "coverage"
+  ]
 }

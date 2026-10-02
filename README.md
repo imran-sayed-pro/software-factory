@@ -86,6 +86,23 @@ Worker settings live in `.factory/config.json` (`workers.max`, `command`, `stall
 spend from token usage while a worker runs, priced by `workers.pricing`; set it to your model's rates. A dependency counts as satisfied only
 once it is merged, and unmerged work keeps its files locked, so parallel cards never collide.
 
+### What workers may run
+
+A worker is `claude -p` with nobody to answer permission prompts, so it runs with an explicit
+allowlist in `.factory/config.json` → `workers.allowedTools`. `factory-init` fills it from the stack
+profile:
+- the edit and search tools;
+- git, node and basic file commands;
+- the stack's tools (for example npm/npx/vitest, pytest/uv/ruff, or swift/xcodebuild);
+- the programs named in `CONSTRAINTS.md`.
+
+Shell wrappers that would allow anything (`bash -c`, `env`, `xargs`, `sudo`) are never on the list.
+A command outside the list is denied, and the worker records it and escalates. Edit the list to
+widen or narrow it. The guard hooks apply on top.
+
+Claude Code also refuses commands containing shell variables (`$VAR`) or `VAR=value` prefixes, so
+skills write paths out in full. Scripts work out the card from the `factory/C-###` branch.
+
 ## Repository layout
 
 | Path | What it holds |

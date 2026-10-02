@@ -27,8 +27,9 @@ pull request, never part of feature work).
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>`. The
-   session briefing prints it even in a repo that is not set up yet.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`.
 1. **Detect before you ask.** Run a dry run and read what it found:
    ```bash
    node "${FACTORY_PLUGIN_ROOT}/scripts/factory-init.mjs" --dry-run

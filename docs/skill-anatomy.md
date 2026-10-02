@@ -28,4 +28,5 @@ Rules:
 - Keep `SKILL.md` under about 400 lines; put long checklists in `references/`.
 - Scripts are referenced as `${FACTORY_PLUGIN_ROOT}/scripts/<name>.mjs`. `dispatch` sets
   `FACTORY_PLUGIN_ROOT` for workers, and the session-start hook prints it in every session. Otherwise
-  it is two directories above the skill's base directory (shown when the skill loads). Step 0 of each skill exports it.
+  it is two directories above the skill's base directory (shown when the skill loads). Commands are refused by Claude Code's permission check when they contain shell variables, so step 0 of
+  each skill tells the model to write the absolute path out.

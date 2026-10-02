@@ -6,7 +6,7 @@
 //   stats
 import fs from 'node:fs';
 import path from 'node:path';
-import { factoryRoot, factoryDir, parseArgs, appendJSONL, readJSONL, nowIso, die } from './lib/common.mjs';
+import { factoryRoot, factoryDir, parseArgs, appendJSONL, readJSONL, nowIso, die, currentCard } from './lib/common.mjs';
 
 const TYPES = ['pattern', 'pitfall', 'preference', 'architecture', 'operational', 'investigation'];
 const args = parseArgs();
@@ -23,7 +23,7 @@ if (cmd === 'add') {
     ts: nowIso(), type: args.type, key: String(args.key), insight: String(args.insight),
     files: args.files ? String(args.files).split(',').map((s) => s.trim()).filter(Boolean) : [],
     confidence: Math.max(1, Math.min(10, Number(args.confidence || 7))),
-    skill: args.skill || process.env.FACTORY_SKILL || 'unknown', card: process.env.FACTORY_CARD || null,
+    skill: args.skill || process.env.FACTORY_SKILL || 'unknown', card: currentCard(args),
   };
   appendJSONL(file, entry);
   console.log(`learned: ${entry.key}`);

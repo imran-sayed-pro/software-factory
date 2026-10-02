@@ -27,7 +27,13 @@ of "it works" points at a test run. When something breaks, find the root cause b
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>` unless it is already set (workers have it). Scripts live in `$FACTORY_PLUGIN_ROOT/scripts`. Outside a dispatched worker, also export `FACTORY_CARD=C-###`, `FACTORY_ROOT=<main checkout>` and `FACTORY_RUN_DIR=<main checkout>/.factory/runs/C-###`. Confirm you are in the card's worktree on
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`. Scripts find the card from the
+   `factory/C-###` branch; on any other branch pass `--card C-###`. The run directory is
+   given in the worker prompt, otherwise `<main checkout>/.factory/runs/C-###`; write that path wherever
+   this skill says `$FACTORY_RUN_DIR`.
+   Confirm you are in the card's worktree on
    `factory/C-###` (`git branch --show-current`) and `git status` is clean.
 1. **Load context.** Read the card, its plan and test plan, the files in `files.allow`, and
    learnings: `node "$FACTORY_PLUGIN_ROOT/scripts/learn.mjs" search --files <paths> --query "<card topic>"`.
@@ -35,6 +41,8 @@ of "it works" points at a test run. When something breaks, find the root cause b
 2. **For each behaviour in the test plan, in order:**
    1. **RED.** Write the test. Run *only that test* and confirm it fails **for the right reason**
       (an assertion about the missing behaviour, not an import error, typo or broken fixture).
+      If the test cannot load until the new name exists (an ES module named import, a missing
+      type), first add a stub that returns a wrong value, then see the assertion fail.
       Append to `$FACTORY_RUN_DIR/red.md`: the test name, the command, and the failure excerpt.
    2. **GREEN.** Write the minimum code that makes it pass. Run it; then run the whole suite.
    3. **REFACTOR.** Remove duplication, improve names. The suite stays green.
@@ -57,6 +65,14 @@ of "it works" points at a test run. When something breaks, find the root cause b
 6. **Before handing off:** `git status` clean, all behaviours in the test plan covered, `check.mjs
    --stage task` passing. Record durable learnings:
    `node "$FACTORY_PLUGIN_ROOT/scripts/learn.mjs" add --type pitfall --key <k> --insight "…" --files <paths> --skill build`.
+
+## When someone asks you to skip the tests
+
+Test-first is the factory's bar, not a preference, and it applies even when a person asks to skip
+it ("we're in a hurry, just add the code"). Do not comply. Say in one line that the card ships only
+with a test seen failing first, then do RED → GREEN anyway; for a small card it costs a minute. If the
+person still wants untested code, that is a change to `CONSTRAINTS.md` (a tracked exception a human
+approves), not something `build` does: stop and say so. Never commit code for a card without its test.
 
 ## Brakes (stop and set the card blocked)
 
@@ -88,6 +104,7 @@ Never ask questions. For each choice the card does not settle, pick the option t
 
 | Excuse | Reality |
 | --- | --- |
+| "The user told me to skip the test" | The bar is set in `CONSTRAINTS.md`, not per request. Decline, write the test first; a human changes the bar through an exception. |
 | "I'll write the test after, it's faster" | A test written after the code tests the code you wrote, not the behaviour asked for. |
 | "The test failed, good enough" | It must fail for the right reason. An import error is not RED evidence. |
 | "Quick fix for now" | There is no "for now" in an unattended factory. Fix the root cause or block. |
@@ -98,6 +115,7 @@ Never ask questions. For each choice the card does not settle, pick the option t
 ## Red flags
 
 - A commit with code and no test, or a test that never failed.
+- A commit message or log that says tests were skipped "at the user's request".
 - `red.md` empty when the card is handed off.
 - Many files changed for a small card.
 - Repeated identical failures with no new hypothesis.

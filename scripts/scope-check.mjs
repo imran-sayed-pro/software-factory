@@ -2,11 +2,11 @@
 // scope-check.mjs: every file this card changed must be inside its files.allow.
 // Covers what the edit hook cannot see (files written by Bash, generators, formatters).
 // Usage: node scope-check.mjs [--card C-001] [--base main] [--json]   Exit: 0 in scope, 1 out of scope, 2 error.
-import { factoryRoot, git, parseArgs, readJSON, matchesAny, die } from './lib/common.mjs';
+import { factoryRoot, git, parseArgs, readJSON, matchesAny, die, currentCard } from './lib/common.mjs';
 import { cardPath } from './lib/cards.mjs';
 
 const args = parseArgs();
-const id = args.card || process.env.FACTORY_CARD || die('--card or FACTORY_CARD is required');
+const id = currentCard(args) || die('no card: pass --card C-###, or run on a factory/C-### branch');
 const card = readJSON(cardPath(factoryRoot(), id));
 const base = args.base || process.env.FACTORY_BASE || 'main';
 const mb = git(['merge-base', base, 'HEAD'], { allowFail: true })?.trim() || die(`no merge base with ${base}`);

@@ -42,7 +42,9 @@ want to change the human's stated direction: never decide; ask at the gate).
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>` unless it is already set (workers have it). Scripts live in `$FACTORY_PLUGIN_ROOT/scripts`.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`.
 1. **Load context.** The spec, every draft card, `CONSTRAINTS.md`, `DONE.md`, the files in each
    card's `files.allow`, and learnings for those files:
    `node "$FACTORY_PLUGIN_ROOT/scripts/learn.mjs" search --files <comma-separated paths>`.

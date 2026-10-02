@@ -9,7 +9,7 @@ const PLUGIN_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 
 // Every session learns where the factory scripts live (skills run them as "$FACTORY_PLUGIN_ROOT/scripts/…"),
 // including repos not set up yet, where factory-init is the first thing to run.
-const rootLine = `- Factory scripts: FACTORY_PLUGIN_ROOT=${PLUGIN_ROOT} (run them as node "${PLUGIN_ROOT}/scripts/<name>.mjs").`;
+const rootLine = `- Factory scripts: FACTORY_PLUGIN_ROOT=${PLUGIN_ROOT} (run them as node "${PLUGIN_ROOT}/scripts/<name>.mjs", with the path written out: commands containing shell variables are refused).`;
 const emit = (lines) => { process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: lines.join('\n').slice(0, 3000) } }) + '\n'); process.exit(0); };
 
 let top;

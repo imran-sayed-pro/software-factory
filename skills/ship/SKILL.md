@@ -27,13 +27,13 @@ the quality bar.
 
 ## Process: before the merge (per card, in dependency order)
 
-0. **Set up the shell** (ship runs in a human's session, so the worker variables are not set):
-   ```bash
-   export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>
-   export FACTORY_ROOT=<main checkout> FACTORY_CARD=C-### FACTORY_RUN_DIR=<main checkout>/.factory/runs/C-###
-   cd "$FACTORY_ROOT/.factory/worktrees/C-###"
-   ```
-   Steps 1–7 run in that worktree.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`. Scripts find the card from the
+   `factory/C-###` branch; on any other branch pass `--card C-###`. The run directory is
+   given in the worker prompt, otherwise `<main checkout>/.factory/runs/C-###`; write that path wherever
+   this skill says `$FACTORY_RUN_DIR`.
+   Steps 1–7 run in the card's worktree: `cd <main checkout>/.factory/worktrees/C-###`.
 1. **Re-verify on the code as it stands now.** All must pass; any failure sends the card back:
    ```bash
    node "$FACTORY_PLUGIN_ROOT/scripts/review-record.mjs" verify --kind review   # CURRENT, APPROVE or WARN

@@ -6,10 +6,12 @@
 // unless --force (and even then CONSTRAINTS.md is backed up first).
 import fs from 'node:fs';
 import path from 'node:path';
+import { workerAllowedTools } from './lib/permissions.mjs';
 import { PLUGIN_ROOT, checkoutRoot, git, parseArgs, writeJSON, die } from './lib/common.mjs';
 import { detectProfiles, resolveProfile, listProfiles } from './lib/profile.mjs';
 
 const args = parseArgs();
+if (args.help || args.h) { console.log("usage: factory-init.mjs [--profile auto|typescript|python|swift] [--base main] [--force] [--dry-run]"); process.exit(0); }
 const root = checkoutRoot();
 const dry = Boolean(args['dry-run']);
 const actions = [];
@@ -48,6 +50,8 @@ write('DONE.md', tpl('DONE.md'), { overwrite: Boolean(args.force) });
 
 const config = JSON.parse(fill(tpl('config.json')));
 config.profiles = detected.length ? detected : [profile.name];
+// Unattended workers cannot answer permission prompts: list what they may run (edit it to taste).
+config.workers.allowedTools = workerAllowedTools(config.profiles, Object.values(profile.commands || {}));
 if (fs.existsSync(path.join(root, '.factory/config.json')) && !args.force) actions.push('kept   .factory/config.json (exists)');
 else { if (!dry) writeJSON(path.join(root, '.factory/config.json'), config); actions.push('wrote  .factory/config.json'); }
 

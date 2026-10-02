@@ -29,7 +29,10 @@ reads their results, and workers never start other workers.
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>` unless it is already set (workers have it). Scripts live in `$FACTORY_PLUGIN_ROOT/scripts`. Run from the main checkout, never from a worktree.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`.
+   Run from the main checkout, never from a worktree.
 1. **Preflight.**
    ```bash
    node "$FACTORY_PLUGIN_ROOT/scripts/card.mjs" validate

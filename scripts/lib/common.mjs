@@ -146,6 +146,20 @@ export function globsOverlap(a, b) {
   return false;
 }
 
+// ---------- current card ----------
+
+/**
+ * The card this command is about: --card, then FACTORY_CARD (set for workers), then the branch name
+ * (factory/C-###). Inferring from the branch keeps commands free of VAR=value prefixes, which a
+ * worker's allowlist would deny.
+ */
+export function currentCard(args = {}, cwd = process.cwd()) {
+  if (args.card) return String(args.card);
+  if (process.env.FACTORY_CARD) return process.env.FACTORY_CARD;
+  const branch = (git(['rev-parse', '--abbrev-ref', 'HEAD'], { cwd, allowFail: true }) || '').trim();
+  return /^factory\/(C-\d+)$/.exec(branch)?.[1] || null;
+}
+
 // ---------- content binding ----------
 
 /**

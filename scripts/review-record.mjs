@@ -7,11 +7,11 @@
 // verdict changes the tree hash, which makes the record STALE: re-run the gate.
 import fs from 'node:fs';
 import path from 'node:path';
-import { factoryRoot, factoryDir, parseArgs, readJSON, writeJSON, treeHash, nowIso, die } from './lib/common.mjs';
+import { factoryRoot, factoryDir, parseArgs, readJSON, writeJSON, treeHash, nowIso, die, currentCard } from './lib/common.mjs';
 
 const args = parseArgs();
 const cmd = args._[0];
-const card = args.card || process.env.FACTORY_CARD || 'local';
+const card = currentCard(args) || 'local';
 const kind = args.kind || 'review';
 if (!['review', 'qa'].includes(kind)) die('--kind must be review or qa');
 const runDir = process.env.FACTORY_RUN_DIR || path.join(factoryDir(factoryRoot()), 'runs', card);

@@ -28,7 +28,13 @@ stale. It applies even when the diff is small or pasted inline.
 
 ## Process
 
-0. **Set up the shell:** `export FACTORY_PLUGIN_ROOT=<plugin path from the session briefing>` unless it is already set (workers have it). Scripts live in `$FACTORY_PLUGIN_ROOT/scripts`. Outside a dispatched worker, also export `FACTORY_CARD=C-###`, `FACTORY_ROOT=<main checkout>` and `FACTORY_RUN_DIR=<main checkout>/.factory/runs/C-###`. Work in the card's worktree with a clean tree.
+0. **Scripts:** the commands below write `$FACTORY_PLUGIN_ROOT`; replace it with the absolute plugin path
+   from the session briefing (or the worker prompt). Write paths out in full and run commands plainly:
+   the permission check refuses commands containing shell variables, `VAR=value` prefixes or `env`. Scripts find the card from the
+   `factory/C-###` branch; on any other branch pass `--card C-###`. The run directory is
+   given in the worker prompt, otherwise `<main checkout>/.factory/runs/C-###`; write that path wherever
+   this skill says `$FACTORY_RUN_DIR`.
+   Work in the card's worktree with a clean tree.
 1. **Mechanical checks** (any failure is a BLOCK finding, no reviewer needed):
    ```bash
    node "$FACTORY_PLUGIN_ROOT/scripts/floor-guard.mjs"              # skipped/deleted tests, suppressions, stubs, loosened bar
