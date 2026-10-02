@@ -56,22 +56,22 @@ production monitoring after deploy (that is `ship`'s canary step).
 4. **Record evidence** for every user-facing acceptance criterion (browser and iOS surfaces; for
    API/CLI see step 5). Read `references/evidence.md`, then:
    ```bash
-   E="$FACTORY_RUN_DIR/qa/evidence"
+   # <ev> is the evidence folder: <run dir>/qa/evidence, written out in full.
    node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" doctor
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" start --output "$E" --title "C-###: <what is verified>" \
-     --commit "$(git rev-parse HEAD)" --branch "$(git branch --show-current)" --environment "<browser, OS, URL>"
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate "$E" --type setup --message "Signed in as test user, on /settings"
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate "$E" --type test_start --message "It should save the new email on submit"
-   #   ...drive the app on screen (headed browser on $DISPLAY), let the UI settle, LOOK, then:
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate "$E" --type assertion --result passed --message "Saved banner shown"
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" stop "$E"
-   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" frames "$E"
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" start --output <ev> --title "C-###: <what is verified>" --environment "<browser, OS, URL>"
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate <ev> --type setup --message "Signed in as test user, on /settings"
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate <ev> --type test_start --message "It should save the new email on submit"
+   #   ...drive the app on screen (headed browser on the worker's display), let the UI settle, LOOK, then:
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" annotate <ev> --type assertion --result passed --message "Saved banner shown"
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" stop <ev>
+   node "$FACTORY_PLUGIN_ROOT/scripts/evidence.mjs" frames <ev>
    ```
-   Then replace the `CAVEATS_PENDING` line in `$E/report.md` with real caveats or "None".
+   `start` records the current commit and branch itself. Then replace the `CAVEATS_PENDING` line in
+   `<ev>/report.md` with real caveats or "None".
 5. **API, CLI and non-visual changes** still need evidence: a scripted probe saved as
    `qa/probe-output.txt` (exact commands, expected vs actual, status codes, measured numbers before/after).
 6. **Independent frame check** (recorded runs): dispatch a fresh subagent with *only* the frames
-   (`$E/frames/*.png`), `$E/frames/index.json` and the card's acceptance criteria. Ask: "For each
+   (`<ev>/frames/*.png`), `<ev>/frames/index.json` and the card's acceptance criteria. Ask: "For each
    frame, does the screen show the asserted state? Answer per frame: confirmed, contradicted, or
    cannot tell, with what you see." Any *contradicted* frame makes the verdict FAIL; *cannot tell*
    makes it PARTIAL until re-recorded.

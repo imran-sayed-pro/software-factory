@@ -15,6 +15,8 @@ case "$FACTORY_CARD" in
   C-001) printf 'export const add = (a, b) => a + b;\\nexport const subtract = (a, b) => a - b;\\n' > src/math.js
          printf "import test from 'node:test';\\nimport assert from 'node:assert';\\nimport { add, subtract } from '../src/math.js';\\ntest('add', () => assert.equal(add(1, 2), 3));\\ntest('subtract', () => assert.equal(subtract(5, 3), 2));\\n" > test/math.test.js ;;
   C-002) echo '{"card":"C-002","state":"blocked","phase":"build","summary":"unclear","blockedReason":"float precision rule not specified"}' > "$R/status.json"; exit 0 ;;
+  C-004) echo 'export const d = 1;' > src/d.js; git add -A && git commit -qm "feat: C-004"
+         echo '{"card":"C-004","state":"done","phase":"build","summary":"skipped review"}' > "$R/status.json"; exit 0 ;;
   *) exit 1 ;;
 esac
 git add -A && git commit -qm "feat: $FACTORY_CARD"
@@ -44,6 +46,7 @@ test('dispatch: parallel start, blocked escalation, dependency wait, merge queue
     '.factory/cards/C-001.json': card('C-001', { files: { allow: ['src/math.js', 'test/math.test.js'] } }),
     '.factory/cards/C-002.json': card('C-002', { files: { allow: ['src/mul.js'] } }),
     '.factory/cards/C-003.json': card('C-003', { files: { allow: ['src/c.js'] }, dependsOn: ['C-001'] }),
+    '.factory/cards/C-004.json': card('C-004', { files: { allow: ['src/d.js'] } }),
   });
   sh('git add -A && git commit -qm "factory init"', dir);
 
@@ -54,7 +57,11 @@ test('dispatch: parallel start, blocked escalation, dependency wait, merge queue
   assert.equal(status('C-002'), 'blocked');
   assert.equal(status('C-003'), 'ready', 'dependency is done but not merged, so C-003 waits');
   assert.match(w.out, /awaiting Gate 2.*C-001/);
-  assert.match(node('dispatch.mjs', ['escalations'], dir).out, /C-002/);
+  const esc = node('dispatch.mjs', ['escalations'], dir).out;
+  assert.match(esc, /C-002/);
+  assert.equal(status('C-004'), 'blocked', 'done without a review verdict is not done');
+  assert.match(esc, /C-004.*no-verdict|no-verdict.*C-004/);
+  assert.ok(fs.existsSync(path.join(dir, '.factory/runs/C-001/inputs/C-001.json')), 'card copied into the run directory');
   assert.equal(node('review-record.mjs', ['verify'], path.join(dir, '.factory/worktrees/C-001'), { FACTORY_CARD: 'C-001', FACTORY_ROOT: dir }).code, 0, 'verdict carried through the queue');
   const args = fs.readFileSync(path.join(dir, '.factory/runs/C-001/args.txt'), 'utf8').split('\n');
   assert.ok(args.includes('Bash(git *)') && args.includes('Bash(npm *)'), 'the allowlist reaches the worker as separate arguments');

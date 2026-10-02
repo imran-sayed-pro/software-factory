@@ -28,6 +28,25 @@ for (const f of files.filter((f) => f.endsWith('.mjs'))) {
 for (const f of files.filter((f) => f.endsWith('.json'))) {
   try { JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { err(f, `invalid JSON: ${e.message}`); }
 }
+// Skills: commands in bash blocks must run under a worker's permission check, which refuses shell
+// variables and $(…) substitutions. $FACTORY_PLUGIN_ROOT and $FACTORY_RUN_DIR are documented
+// placeholders (step 0 says to write the real path); anything else is an error.
+for (const dir of fs.readdirSync(path.join(root, 'skills'))) {
+  const files = [path.join(root, 'skills', dir, 'SKILL.md')];
+  const refs = path.join(root, 'skills', dir, 'references');
+  if (fs.existsSync(refs)) for (const r of fs.readdirSync(refs)) files.push(path.join(refs, r));
+  for (const f of files.filter((x) => x.endsWith('.md') && fs.existsSync(x))) {
+    let inBash = false;
+    fs.readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+      if (/^\s*```(bash|sh)\b/.test(line)) { inBash = true; return; }
+      if (/^\s*```/.test(line)) { inBash = false; return; }
+      if (!inBash) return;
+      const bad = [...line.matchAll(/\$\(|\$\{?([A-Za-z_]\w*)/g)].filter((m) => m[0] === '$(' || !['FACTORY_PLUGIN_ROOT', 'FACTORY_RUN_DIR'].includes(m[1]));
+      if (bad.length) err(`${f}:${i + 1}`, `shell variable or substitution in a command (${bad[0][0]}): workers' permission check refuses these`);
+    });
+  }
+}
+
 // 3. floor-guard stays standalone (it is copied into target repos).
 const fg = fs.readFileSync(path.join(root, 'scripts/floor-guard.mjs'), 'utf8');
 if (/from '\.\.?\//.test(fg)) err(path.join(root, 'scripts/floor-guard.mjs'), 'must not import local modules (it is copied into target repos)');

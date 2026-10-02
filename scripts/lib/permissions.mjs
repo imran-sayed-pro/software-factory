@@ -12,7 +12,7 @@ export const WORKER_TOOLS = ['Read', 'Edit', 'Write', 'MultiEdit', 'NotebookEdit
 // than curl (needed for API QA; piping it into a shell is still caught by the guard hook).
 export const BASE_COMMANDS = [
   'git', 'node', 'cd', 'export', 'pwd', 'ls', 'cat', 'head', 'tail', 'wc', 'grep', 'rg', 'find', 'sort', 'uniq',
-  'diff', 'cut', 'tr', 'sed', 'awk', 'jq', 'echo', 'printf', 'test', 'true', 'mkdir', 'touch', 'cp', 'mv', 'rm',
+  'diff', 'cut', 'tr', 'sed', 'awk', 'jq', 'tee', 'echo', 'printf', 'test', 'true', 'mkdir', 'touch', 'cp', 'mv', 'rm',
   'ln', 'chmod', 'basename', 'dirname', 'realpath', 'which', 'command', 'date', 'sleep', 'curl', 'lsof', 'kill',
   'ps', 'ffmpeg', 'ffprobe',
 ];
@@ -39,7 +39,33 @@ export function workerAllowedTools(profileNames = [], resolved = []) {
   return [...WORKER_TOOLS, ...bash];
 }
 
-/** Expand a `{allowedTools}` element of a worker command into one argument per rule. */
-export function expandCommand(command, { prompt = '', card = '', allowedTools = [] } = {}) {
-  return command.flatMap((a) => (a === '{allowedTools}' ? allowedTools : [a.replaceAll('{prompt}', prompt).replaceAll('{card}', card)]));
+/**
+ * Fill a worker command: `{allowedTools}` becomes one argument per rule; `{prompt}`, `{card}`,
+ * `{pluginDir}` and `{runDir}` are substituted. A `claude` command always gets the plugin (skills and
+ * safety hooks) and the run directory, even from a config written before these flags existed.
+ */
+export function expandCommand(command, { prompt = '', card = '', allowedTools = [], pluginDir = '', runDir = '' } = {}) {
+  const sub = (a) => a.replaceAll('{prompt}', prompt).replaceAll('{card}', card).replaceAll('{pluginDir}', pluginDir).replaceAll('{runDir}', runDir);
+  const argv = command.flatMap((a) => (a === '{allowedTools}' ? allowedTools : [sub(a)]));
+  if (/(^|\/)claude$/.test(argv[0] || '')) {
+    const extra = [];
+    if (pluginDir && !argv.includes('--plugin-dir')) extra.push('--plugin-dir', pluginDir);
+    if (runDir && !argv.includes('--add-dir')) extra.push('--add-dir', runDir);
+    // Before any variadic flag (--allowedTools takes the rest of the line).
+    argv.splice(1, 0, ...extra);
+  }
+  return argv;
+}
+
+/**
+ * Environment for a worker: the parent's, minus the variables that tie a process to the parent
+ * Claude Code session (its id, socket, pid). Auth and proxy settings are kept.
+ */
+export const PARENT_SESSION_VARS = ['CLAUDECODE', 'CLAUDE_PID', 'CLAUDE_CODE_SESSION_ID', 'CLAUDE_CODE_REMOTE_SESSION_ID', 'CLAUDE_CODE_CHILD_SESSION',
+  'CLAUDE_CODE_SESSION_ATTENDED', 'CLAUDE_CODE_MESSAGING_SOCKET', 'CLAUDE_CODE_MESSAGING_TOKEN', 'CLAUDE_AFTER_LAST_COMPACT', 'CLAUDE_ENV_FILE',
+  'CLAUDE_CODE_ENTRYPOINT', 'CLAUDE_CODE_DIAGNOSTICS_FILE'];
+export function workerEnv(base, extra) {
+  const env = { ...base };
+  for (const k of PARENT_SESSION_VARS) delete env[k];
+  return { ...env, ...extra };
 }

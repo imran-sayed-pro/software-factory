@@ -10,13 +10,15 @@
 // (annotated recording + report + manifest); no code was copied (that repository publishes no licence).
 // Linux X11/Xvfb capture via ffmpeg x11grab. `--source test` is a synthetic pattern for toolchain checks
 // only and is marked synthetic in every output: never present it as evidence.
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, die, currentCard } from './lib/common.mjs';
 
 const args = parseArgs();
+// Commit and branch default to the current checkout, so callers need no $(git …) substitutions.
+const gitOut = (a) => { try { return execFileSync('git', a, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null; } catch { return null; } };
 const cmd = args._[0];
 const has = (bin) => spawnSync('bash', ['-lc', `command -v ${bin}`], { encoding: 'utf8' }).status === 0;
 const ff = (a, opts = {}) => spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...a], { encoding: 'utf8', ...opts });
@@ -79,7 +81,7 @@ function start() {
     { detached: true, stdio: ['ignore', log, log] });
   child.unref();
   const session = {
-    state: 'recording', title: args.title, commit: args.commit || null, branch: args.branch || null, environment: args.environment || null,
+    state: 'recording', title: args.title, commit: args.commit || gitOut(['rev-parse', 'HEAD']), branch: args.branch || gitOut(['branch', '--show-current']), environment: args.environment || null,
     source, synthetic: source === 'test', display: source === 'x11' ? display : null, size, fps: Number(fps),
     startedAtMs: Date.now(), startedAt: nowIso(), pid: child.pid, raw,
     card: currentCard(args),
