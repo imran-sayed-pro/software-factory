@@ -42,7 +42,7 @@ stale. It applies even when the diff is small or pasted inline.
    node "$FACTORY_PLUGIN_ROOT/scripts/check.mjs" --stage review     # types, lint, tests, changed-line coverage, secrets, deps
    ```
    A `GAP` row (tool not installed) becomes a MEDIUM finding: "not assessed", never a pass.
-2. **Size the review:** `git diff --stat $(git merge-base $FACTORY_BASE HEAD)`. Pick reviewers:
+2. **Size the review:** `git diff --stat <base>...HEAD` (three dots: changes since the merge base). Pick reviewers:
 
    | Agent | Runs when |
    | --- | --- |

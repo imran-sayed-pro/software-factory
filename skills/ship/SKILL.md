@@ -70,7 +70,7 @@ the quality bar.
    `AGENTS.md`). Then, **in the main checkout** (cards live there, not in the worktree), mark the card
    and release waiting work:
    ```bash
-   cd "$FACTORY_ROOT" && git checkout <base> && git pull --ff-only
+   cd <main checkout> && git checkout <base> && git pull --ff-only
    node "$FACTORY_PLUGIN_ROOT/scripts/card.mjs" set C-### merged
    git add .factory/cards/C-###.json && git commit -m "chore: C-### merged"
    git push   # if the base branch is protected, push a branch and open a one-line PR instead

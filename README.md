@@ -103,6 +103,19 @@ widen or narrow it. The guard hooks apply on top.
 Claude Code also refuses commands containing shell variables (`$VAR`) or `VAR=value` prefixes, so
 skills write paths out in full. Scripts work out the card from the `factory/C-###` branch.
 
+### How a worker starts
+
+Each worker is a fresh `claude -p` session in its card's worktree, started with:
+- `--plugin-dir <plugin root>`, so the factory skills and safety hooks are always loaded, even when the
+  plugin is not installed;
+- `--add-dir <run dir>`, so it can write evidence and reports there;
+- its inputs copied into `<run dir>/inputs/` (the card, plan, test plan and spec), so it never reads
+  your main checkout;
+- an environment without the parent Claude session's variables, so it gets its own session.
+
+A worker that reports `done` without a current, passing review verdict (and QA verdict, when the card
+has a QA surface) is escalated straight away, not merged.
+
 ## Repository layout
 
 | Path | What it holds |

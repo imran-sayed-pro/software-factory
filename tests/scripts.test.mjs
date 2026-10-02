@@ -156,3 +156,14 @@ test('factory-init --help prints usage and writes nothing', () => {
   assert.ok(!fs.existsSync(path.join(dir, 'CONSTRAINTS.md')));
   rm(dir);
 });
+
+test('worker command gets the plugin and run dir; worker env drops the parent session', async () => {
+  const { expandCommand, workerEnv } = await import('../scripts/lib/permissions.mjs');
+  const argv = expandCommand(['claude', '-p', '{prompt}', '--allowedTools', '{allowedTools}'], { prompt: 'p', allowedTools: ['Edit'], pluginDir: '/plug', runDir: '/run' });
+  assert.deepEqual(argv, ['claude', '--plugin-dir', '/plug', '--add-dir', '/run', '-p', 'p', '--allowedTools', 'Edit']);
+  const full = expandCommand(['claude', '--plugin-dir', '{pluginDir}', '--add-dir', '{runDir}', '-p', '{prompt}'], { prompt: 'p', pluginDir: '/plug', runDir: '/run' });
+  assert.deepEqual(full, ['claude', '--plugin-dir', '/plug', '--add-dir', '/run', '-p', 'p'], 'no duplicates');
+  assert.deepEqual(expandCommand(['bash', 'w.sh', '{card}'], { card: 'C-1', pluginDir: '/plug' }), ['bash', 'w.sh', 'C-1'], 'non-claude commands untouched');
+  const env = workerEnv({ CLAUDE_CODE_SESSION_ID: 's', CLAUDECODE: '1', ANTHROPIC_BASE_URL: 'u', PATH: '/bin' }, { FACTORY_CARD: 'C-1' });
+  assert.deepEqual(env, { ANTHROPIC_BASE_URL: 'u', PATH: '/bin', FACTORY_CARD: 'C-1' });
+});

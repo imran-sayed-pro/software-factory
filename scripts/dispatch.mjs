@@ -22,7 +22,7 @@ import {
   PLUGIN_ROOT, factoryRoot, factoryDir, git, parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, treeHash, die,
 } from './lib/common.mjs';
 import { scanUsage, costOf } from './lib/usage.mjs';
-import { workerAllowedTools, expandCommand } from './lib/permissions.mjs';
+import { workerAllowedTools, expandCommand, workerEnv } from './lib/permissions.mjs';
 import { loadCards, saveCard, validateCard, topoOrder, readyCards, pickLaunchable } from './lib/cards.mjs';
 
 const args = parseArgs();
@@ -34,7 +34,7 @@ if (!fs.existsSync(configPath)) die('no .factory/config.json: run factory-init f
 const config = readJSON(configPath);
 const W = {
   max: 3, stallMinutes: 15, maxMinutesPerCard: 120, maxCostUsdPerCard: 15, maxAttemptsPerCard: 2, virtualDisplay: true,
-  command: ['claude', '-p', '{prompt}', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose', '--allowedTools', '{allowedTools}'],
+  command: ['claude', '-p', '{prompt}', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose', '--plugin-dir', '{pluginDir}', '--add-dir', '{runDir}', '--allowedTools', '{allowedTools}'],
   ...(config.workers || {}),
 };
 // Configs written before workers.allowedTools existed get the profile defaults.
@@ -90,12 +90,12 @@ function openEscalations() {
 function workerPrompt(card) {
   return [
     `You are an UNATTENDED software-factory worker for card ${card.id}: "${card.title}".`,
-    `Card file: ${path.join(fdir, 'cards', `${card.id}.json`)}. Plan: ${path.join(fdir, 'plans', `${card.id}.md`)} (if present). Test plan: ${path.join(fdir, 'test-plans', `${card.id}.md`)} (if present).`,
+    `Inputs (copies made for you): ${path.join(runDirOf(card.id), 'inputs')}/ holds ${card.id}.json (the card), and plan.md, test-plan.md and spec.md when they exist.`,
     `Your git worktree is the current directory, on branch ${branchOf(card.id)} from ${base}. Run directory for all evidence and reports: ${runDirOf(card.id)}.`,
-    `Factory scripts are in ${path.join(PLUGIN_ROOT, 'scripts')}. Write that absolute path (and the run directory) out in full: the permission check refuses commands that contain shell variables such as $FACTORY_PLUGIN_ROOT, and commands not on the allowlist.`,
+    `Factory scripts are in ${path.join(PLUGIN_ROOT, 'scripts')}. Write that absolute path (and the run directory) out in full: the permission check refuses commands that contain shell variables such as $FACTORY_PLUGIN_ROOT, and commands not on the allowlist. Read files outside your worktree (skill references, the inputs) with the Read tool, not cat.`,
     'Do the work in this order, using the software-factory skills:',
     '1. build: test-first implementation of the card (RED evidence, minimal GREEN, refactor, commit on this branch).',
-    '2. review-gate: run it on your diff; fix ASK/BLOCK findings you are allowed to fix, then re-run until APPROVE or WARN.',
+    '2. review-gate: run it on your diff; fix ASK/BLOCK findings you are allowed to fix, then re-run until APPROVE or WARN. It is never skipped: a small diff gets at least code-reviewer and test-reviewer, and the verdict must be written with review-record.mjs. A card reported done without a current review verdict is rejected.',
     `3. qa-verify: surface "${card.verification?.qaSurface || 'none'}"; record evidence for user-facing behaviour.`,
     `4. Write ${path.join(runDirOf(card.id), 'handoff.md')} and finally ${path.join(runDirOf(card.id), 'status.json')} as {"card","state":"done"|"blocked","phase","summary","blockedReason"}.`,
     'Rules: never ask questions (choose the recommended option, never a destructive one, and append each choice to decisions.md in the run directory);',
@@ -131,15 +131,23 @@ function launch(card, board, dry) {
     const exists = git(['rev-parse', '--verify', '-q', branch], { cwd: root, allowFail: true });
     git(['worktree', 'add', ...(exists ? [wt, branch] : ['-b', branch, wt, base])], { cwd: root });
   }
+  // The worker reads its inputs from its own run directory, never from the main checkout.
+  const inputs = path.join(runDir, 'inputs');
+  fs.mkdirSync(inputs, { recursive: true });
+  fs.writeFileSync(path.join(inputs, `${card.id}.json`), JSON.stringify(card, null, 2) + '\n');
+  for (const [dir, name] of [['plans', 'plan.md'], ['test-plans', 'test-plan.md'], ['specs', 'spec.md']]) {
+    const src = path.join(fdir, dir, `${dir === 'specs' ? card.spec : card.id}.md`);
+    if (fs.existsSync(src)) fs.copyFileSync(src, path.join(inputs, name));
+  }
   const prompt = workerPrompt(card);
   fs.writeFileSync(path.join(runDir, 'prompt.md'), prompt + '\n');
   const vd = startVirtualDisplay(runDir);
-  const argv = expandCommand(W.command, { prompt, card: card.id, allowedTools: W.allowedTools });
+  const argv = expandCommand(W.command, { prompt, card: card.id, allowedTools: W.allowedTools, pluginDir: PLUGIN_ROOT, runDir });
   const log = fs.openSync(path.join(runDir, 'worker.log'), 'a');
-  const env = {
-    ...process.env, FACTORY_UNATTENDED: '1', FACTORY_CARD: card.id, FACTORY_ROOT: root, FACTORY_RUN_DIR: runDir,
+  const env = workerEnv(process.env, {
+    FACTORY_UNATTENDED: '1', FACTORY_CARD: card.id, FACTORY_ROOT: root, FACTORY_RUN_DIR: runDir,
     FACTORY_BASE: base, FACTORY_PLUGIN_ROOT: PLUGIN_ROOT, ...(vd.display ? { DISPLAY: vd.display } : {}),
-  };
+  });
   const child = spawn(argv[0], argv.slice(1), { cwd: wt, env, detached: true, stdio: ['ignore', log, log] });
   child.on('error', (e) => fs.appendFileSync(path.join(runDir, 'worker.log'), `\n[dispatch] spawn error: ${e.message}\n`));
   child.unref();
@@ -154,6 +162,12 @@ function launch(card, board, dry) {
 }
 
 // ---------- status ----------
+function missingVerdicts(card, w) {
+  const kinds = ['review', ...(card.verification?.qaSurface && card.verification.qaSurface !== 'none' ? ['qa'] : [])];
+  return kinds.filter((kind) => spawnSync(process.execPath, [path.join(PLUGIN_ROOT, 'scripts', 'review-record.mjs'), 'verify', '--kind', kind, '--card', card.id],
+    { cwd: w.worktree, encoding: 'utf8', env: { ...process.env, FACTORY_ROOT: root, FACTORY_RUN_DIR: w.runDir } }).status !== 0);
+}
+
 function refresh(board, cards) {
   const byId = new Map(cards.map((c) => [c.id, c]));
   const rows = [];
@@ -181,7 +195,14 @@ function refresh(board, cards) {
       finish('failed', 'blocked');
       escalate(id, 'crashed', `status.json is not valid JSON (${stError}); log: ${logFile}`);
     } else if (!isAlive) {
-      if (st?.state === 'done') finish('done', 'review');
+      if (st?.state === 'done') {
+        // "Done" counts only with a current, passing verdict bound to the worker's code.
+        const missing = missingVerdicts(card, w);
+        if (missing.length) {
+          finish('failed', 'blocked');
+          escalate(id, 'no-verdict', `worker reported done without a current passing ${missing.join(' and ')} verdict; re-run the gate(s) in ${w.worktree}`);
+        } else finish('done', 'review');
+      }
       else {
         const reason = st?.state === 'blocked' ? `worker blocked: ${st.blockedReason || st.summary || 'no reason given'}` : 'worker exited without writing status.json';
         finish('failed', 'blocked');
