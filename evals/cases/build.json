@@ -18,7 +18,7 @@
       "fixture": "sample-node",
       "prompt": "Use the software-factory build skill to implement card C-001 in this repo (the card is in .factory/cards/C-001.json). Work directly in this checkout on a new branch factory/C-001. FACTORY_RUN_DIR is .factory/runs/C-001.",
       "expectations": [
-        "A test for subtract was written and run, and the run failed before src/math.js was changed",
+        "A test for subtract was written and seen failing on an assertion before the real implementation was written (a stub that returns a wrong value is allowed; an import or syntax error alone is not RED evidence)",
         "The failing-test evidence was written to .factory/runs/C-001/red.md",
         "src/math.js exports a subtract function and the full test suite passes",
         "Only files listed in the card's files.allow were changed (src/math.js, test/math.test.js) apart from .factory/runs",

@@ -10,6 +10,7 @@ import { tempRepo, write, sh, node, rm, ROOT } from './helpers.mjs';
 const FAKE_WORKER = `#!/usr/bin/env bash
 set -e
 R="$FACTORY_RUN_DIR"
+printf '%s\\n' "$@" > "$R/args.txt"
 case "$FACTORY_CARD" in
   C-001) printf 'export const add = (a, b) => a + b;\\nexport const subtract = (a, b) => a - b;\\n' > src/math.js
          printf "import test from 'node:test';\\nimport assert from 'node:assert';\\nimport { add, subtract } from '../src/math.js';\\ntest('add', () => assert.equal(add(1, 2), 3));\\ntest('subtract', () => assert.equal(subtract(5, 3), 2));\\n" > test/math.test.js ;;
@@ -36,7 +37,7 @@ test('dispatch: parallel start, blocked escalation, dependency wait, merge queue
   assert.equal(node('factory-init.mjs', [], dir).code, 0);
   const cfgPath = path.join(dir, '.factory/config.json');
   const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-  cfg.workers = { ...cfg.workers, command: ['bash', path.join(dir, '.factory/fake-worker.sh')], virtualDisplay: false };
+  cfg.workers = { ...cfg.workers, command: ['bash', path.join(dir, '.factory/fake-worker.sh'), '{allowedTools}'], virtualDisplay: false };
   write(dir, {
     '.factory/config.json': JSON.stringify(cfg, null, 2),
     '.factory/fake-worker.sh': FAKE_WORKER,
@@ -55,6 +56,9 @@ test('dispatch: parallel start, blocked escalation, dependency wait, merge queue
   assert.match(w.out, /awaiting Gate 2.*C-001/);
   assert.match(node('dispatch.mjs', ['escalations'], dir).out, /C-002/);
   assert.equal(node('review-record.mjs', ['verify'], path.join(dir, '.factory/worktrees/C-001'), { FACTORY_CARD: 'C-001', FACTORY_ROOT: dir }).code, 0, 'verdict carried through the queue');
+  const args = fs.readFileSync(path.join(dir, '.factory/runs/C-001/args.txt'), 'utf8').split('\n');
+  assert.ok(args.includes('Bash(git *)') && args.includes('Bash(npm *)'), 'the allowlist reaches the worker as separate arguments');
+  assert.ok(!args.includes('Bash(bash *)'), 'no shell wrappers');
   node('dispatch.mjs', ['cleanup', '--all'], dir);
   rm(dir);
 });

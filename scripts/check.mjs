@@ -3,12 +3,12 @@
 // Usage: node check.mjs [--stage task|review|ci|all] [--json] [--timeout 900]
 // A row runs when its "Runs at" cell mentions the stage ("every task end" -> task, "review", "CI").
 // Results: pass, fail, gap (tool not installed / row marked "not yet installed"), and a summary.
-// Writes .factory/runs/<card>/checks-<stage>.json when FACTORY_RUN_DIR or FACTORY_CARD is set.
+// Writes .factory/runs/<card>/checks-<stage>.json when it knows the card (--card, FACTORY_CARD or a factory/C-### branch).
 // Exit: 0 all pass (gaps allowed but reported), 1 any fail, 2 could not run.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { checkoutRoot, factoryRoot, factoryDir, parseArgs, writeJSON, nowIso } from './lib/common.mjs';
+import { checkoutRoot, factoryRoot, factoryDir, parseArgs, writeJSON, nowIso, currentCard } from './lib/common.mjs';
 
 const args = parseArgs();
 const stage = String(args.stage || 'task').toLowerCase();
@@ -68,7 +68,8 @@ for (const r of rows.filter(want)) {
 
 const summary = { stage, at: nowIso(), pass: results.filter((r) => r.status === 'pass').length, fail: results.filter((r) => r.status === 'fail').length, gap: results.filter((r) => r.status === 'gap').length };
 const record = { summary, results };
-const runDir = process.env.FACTORY_RUN_DIR || (process.env.FACTORY_CARD ? path.join(factoryDir(factoryRoot()), 'runs', process.env.FACTORY_CARD) : null);
+const cardId = currentCard(args);
+const runDir = process.env.FACTORY_RUN_DIR || (cardId ? path.join(factoryDir(factoryRoot()), 'runs', cardId) : null);
 if (runDir) writeJSON(path.join(runDir, `checks-${stage}.json`), record);
 
 if (args.json) console.log(JSON.stringify(record, null, 2));

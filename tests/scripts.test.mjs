@@ -83,6 +83,9 @@ test('factory-init writes the bar, keeps user content and is idempotent', () => 
   assert.match(agents, /Keep this line\./);
   assert.match(agents, /software-factory:start/);
   assert.match(fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8'), /^@AGENTS\.md/m);
+  const cfg = JSON.parse(fs.readFileSync(path.join(dir, '.factory/config.json'), 'utf8'));
+  assert.ok(cfg.workers.allowedTools.includes('Bash(npm *)'), 'workers may run the stack tools');
+  assert.ok(cfg.workers.command.includes('{allowedTools}'));
   assert.doesNotMatch(fs.readFileSync(path.join(dir, 'CONSTRAINTS.md'), 'utf8'), /\{\{\w+\}\}/, 'no unfilled placeholders');
   assert.equal(node('factory-init.mjs', [], dir).code, 0);
   const again = fs.readFileSync(path.join(dir, 'AGENTS.md'), 'utf8');
@@ -123,5 +126,33 @@ test('cost estimate reads per-message usage while the worker runs', async () => 
   fs.appendFileSync(log, `":1}\n${JSON.stringify({ type: 'result', total_cost_usd: 2.5 })}\n`);
   st = scanUsage(log, st);
   assert.equal(costOf(st), 2.5, 'the CLI total wins once reported');
+  rm(dir);
+});
+
+test('worker allowlist: base tools, stack tools, resolved commands, never shell wrappers', async () => {
+  const { workerAllowedTools, expandCommand, programOf } = await import('../scripts/lib/permissions.mjs');
+  const py = workerAllowedTools(['python'], ['CI=1 gitleaks detect --redact', 'bash -lc "x"']);
+  for (const r of ['Edit', 'Bash(git *)', 'Bash(node *)', 'Bash(pytest *)', 'Bash(uv *)', 'Bash(gitleaks *)', 'Bash(ls)']) assert.ok(py.includes(r), r);
+  for (const r of ['Bash(bash *)', 'Bash(sh *)', 'Bash(env *)', 'Bash(xargs *)', 'Bash(npm *)']) assert.ok(!py.includes(r), r);
+  assert.equal(programOf('FOO=1 npm test'), 'npm');
+  assert.deepEqual(expandCommand(['claude', '-p', '{prompt}', '--allowedTools', '{allowedTools}'], { prompt: 'do C-1', allowedTools: ['Edit', 'Bash(git *)'] }),
+    ['claude', '-p', 'do C-1', '--allowedTools', 'Edit', 'Bash(git *)']);
+});
+
+test('scripts infer the card from a factory/C-### branch, without environment variables', () => {
+  const dir = nodeRepo();
+  sh('git checkout -qb factory/C-007', dir);
+  assert.equal(node('review-record.mjs', ['write', '--verdict', 'APPROVE'], dir).code, 0);
+  assert.ok(fs.existsSync(path.join(dir, '.factory/runs/C-007/review.json')));
+  assert.equal(node('review-record.mjs', ['verify'], dir).code, 0);
+  rm(dir);
+});
+
+test('factory-init --help prints usage and writes nothing', () => {
+  const dir = nodeRepo();
+  const r = node('factory-init.mjs', ['--help'], dir);
+  assert.equal(r.code, 0);
+  assert.match(r.out, /usage/);
+  assert.ok(!fs.existsSync(path.join(dir, 'CONSTRAINTS.md')));
   rm(dir);
 });

@@ -1,8 +1,21 @@
 {
   "name": "typescript",
   "description": "TypeScript / JavaScript on Node: React, Next.js, Express, Vite, plain Node.",
-  "detect": { "anyFile": ["package.json"] },
-  "packageManager": { "lockfiles": { "pnpm-lock.yaml": "pnpm", "yarn.lock": "yarn", "bun.lockb": "bun", "bun.lock": "bun", "package-lock.json": "npm" }, "default": "npm" },
+  "detect": {
+    "anyFile": [
+      "package.json"
+    ]
+  },
+  "packageManager": {
+    "lockfiles": {
+      "pnpm-lock.yaml": "pnpm",
+      "yarn.lock": "yarn",
+      "bun.lockb": "bun",
+      "bun.lock": "bun",
+      "package-lock.json": "npm"
+    },
+    "default": "npm"
+  },
   "commands": {
     "install": "{pm} install",
     "typecheck": "npx --no-install tsc --noEmit",
@@ -17,6 +30,27 @@
   },
   "coverageReport": "coverage/lcov.info",
   "testFilePattern": "(\\.(test|spec)\\.[cm]?[jt]sx?$|__tests__/)",
-  "devServer": { "command": "{pm} run dev", "url": "http://localhost:3000" },
-  "qaSurfaces": ["browser", "api", "cli"]
+  "devServer": {
+    "command": "{pm} run dev",
+    "url": "http://localhost:3000"
+  },
+  "qaSurfaces": [
+    "browser",
+    "api",
+    "cli"
+  ],
+  "workerCommands": [
+    "npm",
+    "npx",
+    "pnpm",
+    "yarn",
+    "bun",
+    "tsc",
+    "eslint",
+    "prettier",
+    "biome",
+    "vitest",
+    "jest",
+    "playwright"
+  ]
 }

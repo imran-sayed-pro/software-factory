@@ -22,6 +22,7 @@ import {
   PLUGIN_ROOT, factoryRoot, factoryDir, git, parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, treeHash, die,
 } from './lib/common.mjs';
 import { scanUsage, costOf } from './lib/usage.mjs';
+import { workerAllowedTools, expandCommand } from './lib/permissions.mjs';
 import { loadCards, saveCard, validateCard, topoOrder, readyCards, pickLaunchable } from './lib/cards.mjs';
 
 const args = parseArgs();
@@ -33,9 +34,11 @@ if (!fs.existsSync(configPath)) die('no .factory/config.json: run factory-init f
 const config = readJSON(configPath);
 const W = {
   max: 3, stallMinutes: 15, maxMinutesPerCard: 120, maxCostUsdPerCard: 15, maxAttemptsPerCard: 2, virtualDisplay: true,
-  command: ['claude', '-p', '{prompt}', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose'],
+  command: ['claude', '-p', '{prompt}', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose', '--allowedTools', '{allowedTools}'],
   ...(config.workers || {}),
 };
+// Configs written before workers.allowedTools existed get the profile defaults.
+if (!Array.isArray(W.allowedTools)) W.allowedTools = workerAllowedTools(config.profiles || [config.profile].filter(Boolean));
 const base = config.baseBranch || 'main';
 const boardPath = path.join(fdir, 'board.json');
 const escPath = path.join(fdir, 'runs', 'escalations.jsonl');
@@ -89,13 +92,14 @@ function workerPrompt(card) {
     `You are an UNATTENDED software-factory worker for card ${card.id}: "${card.title}".`,
     `Card file: ${path.join(fdir, 'cards', `${card.id}.json`)}. Plan: ${path.join(fdir, 'plans', `${card.id}.md`)} (if present). Test plan: ${path.join(fdir, 'test-plans', `${card.id}.md`)} (if present).`,
     `Your git worktree is the current directory, on branch ${branchOf(card.id)} from ${base}. Run directory for all evidence and reports: ${runDirOf(card.id)}.`,
+    `Factory scripts are in ${path.join(PLUGIN_ROOT, 'scripts')}. Write that absolute path (and the run directory) out in full: the permission check refuses commands that contain shell variables such as $FACTORY_PLUGIN_ROOT, and commands not on the allowlist.`,
     'Do the work in this order, using the software-factory skills:',
     '1. build: test-first implementation of the card (RED evidence, minimal GREEN, refactor, commit on this branch).',
     '2. review-gate: run it on your diff; fix ASK/BLOCK findings you are allowed to fix, then re-run until APPROVE or WARN.',
     `3. qa-verify: surface "${card.verification?.qaSurface || 'none'}"; record evidence for user-facing behaviour.`,
     `4. Write ${path.join(runDirOf(card.id), 'handoff.md')} and finally ${path.join(runDirOf(card.id), 'status.json')} as {"card","state":"done"|"blocked","phase","summary","blockedReason"}.`,
     'Rules: never ask questions (choose the recommended option, never a destructive one, and append each choice to decisions.md in the run directory);',
-    'stay inside the card files.allow; never edit CONSTRAINTS.md, DONE.md or .factory/; never push or merge; stop with state "blocked" on any brake',
+    'stay inside the card files.allow; never edit CONSTRAINTS.md, DONE.md or anything under .factory/ except your run directory; never push or merge; stop with state "blocked" on any brake',
     '(3 failed hypotheses, a fix needing more than the allowed files, a high-risk action without sign-off, or a decision the card does not cover).',
   ].join('\n');
 }
@@ -130,7 +134,7 @@ function launch(card, board, dry) {
   const prompt = workerPrompt(card);
   fs.writeFileSync(path.join(runDir, 'prompt.md'), prompt + '\n');
   const vd = startVirtualDisplay(runDir);
-  const argv = W.command.map((a) => a.replaceAll('{prompt}', prompt).replaceAll('{card}', card.id));
+  const argv = expandCommand(W.command, { prompt, card: card.id, allowedTools: W.allowedTools });
   const log = fs.openSync(path.join(runDir, 'worker.log'), 'a');
   const env = {
     ...process.env, FACTORY_UNATTENDED: '1', FACTORY_CARD: card.id, FACTORY_ROOT: root, FACTORY_RUN_DIR: runDir,

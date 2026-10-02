@@ -4,7 +4,7 @@
   "baseBranch": "{{base}}",
   "workers": {
     "max": 3,
-    "command": ["claude", "-p", "{prompt}", "--permission-mode", "acceptEdits", "--output-format", "stream-json", "--verbose"],
+    "command": ["claude", "-p", "{prompt}", "--permission-mode", "acceptEdits", "--output-format", "stream-json", "--verbose", "--allowedTools", "{allowedTools}"],
     "stallMinutes": 15,
     "maxCostUsdPerCard": 15,
     "pricing": { "inputPerMTok": 15, "outputPerMTok": 75, "cacheReadPerMTok": 1.5, "cacheWritePerMTok": 18.75 },

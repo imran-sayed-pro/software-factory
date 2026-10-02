@@ -14,7 +14,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, die } from './lib/common.mjs';
+import { parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, die, currentCard } from './lib/common.mjs';
 
 const args = parseArgs();
 const cmd = args._[0];
@@ -82,7 +82,7 @@ function start() {
     state: 'recording', title: args.title, commit: args.commit || null, branch: args.branch || null, environment: args.environment || null,
     source, synthetic: source === 'test', display: source === 'x11' ? display : null, size, fps: Number(fps),
     startedAtMs: Date.now(), startedAt: nowIso(), pid: child.pid, raw,
-    card: process.env.FACTORY_CARD || null,
+    card: currentCard(args),
   };
   writeJSON(sessionFile(out), session);
   sleep(700);
