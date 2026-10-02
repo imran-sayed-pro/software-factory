@@ -1,0 +1,15 @@
+{
+  "id": "C-001",
+  "spec": "S-001",
+  "title": "Add a subtract function to the math module",
+  "description": "Export subtract(a, b) from src/math.js, returning a - b, with unit tests.",
+  "acceptance": ["subtract(5, 3) returns 2", "subtract(0, 4) returns -4"],
+  "verification": { "commands": ["npm test"], "qaSurface": "none" },
+  "dependsOn": [],
+  "files": { "allow": ["src/math.js", "test/math.test.js"] },
+  "size": "XS",
+  "risk": "low",
+  "highRiskReasons": [],
+  "rollback": "git revert the card commit",
+  "status": "ready"
+}

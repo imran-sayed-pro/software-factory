@@ -1,0 +1,6 @@
+# Paths the floor guard skips in this repo: they contain the patterns it detects, as data.
+scripts/floor-guard.mjs
+scripts/dev/lint.mjs
+tests/**
+evals/fixtures/**
+hooks/**

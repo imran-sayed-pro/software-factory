@@ -1,0 +1,6 @@
+# runtime state: never committed
+runs/
+worktrees/
+backups/
+board.json
+*.lock

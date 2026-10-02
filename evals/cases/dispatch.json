@@ -1,0 +1,16 @@
+{
+  "skill_name": "dispatch",
+  "trigger": {
+    "positive": [
+      { "prompt": "Start the workers and run the ready cards in parallel", "top_k": 1 },
+      { "prompt": "What's the factory doing? Check on the workers and escalations", "top_k": 1 },
+      { "prompt": "Process the merge queue for the finished cards", "top_k": 1 },
+      { "prompt": "Dispatch the approved cards", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Spec out a new billing feature", "owner": "spec" },
+      { "prompt": "Record a demo video proving the fix works", "owner": "qa-verify" }
+    ]
+  },
+  "evals": []
+}

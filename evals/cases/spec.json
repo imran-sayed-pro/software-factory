@@ -1,0 +1,16 @@
+{
+  "skill_name": "spec",
+  "trigger": {
+    "positive": [
+      { "prompt": "I want to build a password reset feature, can you spec it out?", "top_k": 1 },
+      { "prompt": "Break this feature request down into small tasks for the factory", "top_k": 1 },
+      { "prompt": "Write up a ticket for adding CSV export to the reports page", "top_k": 1 },
+      { "prompt": "Here's a vague idea for notifications, turn it into work cards", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Start the workers on the approved cards", "owner": "dispatch" },
+      { "prompt": "Review the diff before I merge", "owner": "review-gate" }
+    ]
+  },
+  "evals": []
+}

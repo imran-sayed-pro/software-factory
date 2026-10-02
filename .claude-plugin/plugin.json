@@ -1,0 +1,10 @@
+{
+  "name": "software-factory",
+  "version": "0.1.0",
+  "description": "An agentic software factory: spec, plan, dispatch parallel workers, build test-first, review, QA with recorded evidence, and ship behind two human gates.",
+  "author": {
+    "name": "Imran Sayed"
+  },
+  "license": "MIT",
+  "skills": "./skills"
+}

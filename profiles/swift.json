@@ -1,0 +1,23 @@
+{
+  "name": "swift",
+  "description": "Swift / SwiftUI iOS apps and Swift packages (macOS host required for device and simulator work).",
+  "detect": { "anyFile": ["Package.swift"], "anyGlob": ["*.xcodeproj", "*.xcworkspace"] },
+  "packageManager": { "lockfiles": {}, "default": "swiftpm" },
+  "commands": {
+    "install": "swift package resolve",
+    "typecheck": "swift build",
+    "lint": "swiftlint lint --strict",
+    "test": "swift test",
+    "coverage": "swift test --enable-code-coverage",
+    "build": "swift build -c release",
+    "e2e": "xcodebuild test -scheme {scheme} -destination 'platform=iOS Simulator,name=iPhone 16'",
+    "auditDeps": "osv-scanner scan source -r .",
+    "secrets": "gitleaks detect --redact --no-banner",
+    "sast": "semgrep scan --config p/default --error --quiet"
+  },
+  "coverageReport": "",
+  "testFilePattern": "(Tests/.+\\.swift$|Tests\\.swift$)",
+  "devServer": { "command": "", "url": "" },
+  "qaSurfaces": ["ios-simulator", "ios-device"],
+  "notes": "Device QA needs a Mac with Xcode and an attached, trusted iPhone. On Linux, only `swift build` / `swift test` for packages run."
+}

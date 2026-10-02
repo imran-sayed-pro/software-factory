@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "profile": "{{profile}}",
+  "baseBranch": "{{base}}",
+  "workers": {
+    "max": 3,
+    "command": ["claude", "-p", "{prompt}", "--permission-mode", "acceptEdits", "--output-format", "stream-json", "--verbose"],
+    "stallMinutes": 15,
+    "maxCostUsdPerCard": 15,
+    "pricing": { "inputPerMTok": 15, "outputPerMTok": 75, "cacheReadPerMTok": 1.5, "cacheWritePerMTok": 18.75 },
+    "maxAttemptsPerCard": 2,
+    "virtualDisplay": true
+  },
+  "brakes": {
+    "maxFailedHypotheses": 3,
+    "maxFilesWithoutAsking": 5,
+    "qaRiskStopPercent": 20,
+    "qaMaxFixes": 30
+  },
+  "evidence": {
+    "adapter": "github-release",
+    "release": "factory-evidence"
+  },
+  "gates": {
+    "plan": "human",
+    "merge": "human"
+  }
+}

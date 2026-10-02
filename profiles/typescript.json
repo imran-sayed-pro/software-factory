@@ -1,0 +1,22 @@
+{
+  "name": "typescript",
+  "description": "TypeScript / JavaScript on Node: React, Next.js, Express, Vite, plain Node.",
+  "detect": { "anyFile": ["package.json"] },
+  "packageManager": { "lockfiles": { "pnpm-lock.yaml": "pnpm", "yarn.lock": "yarn", "bun.lockb": "bun", "bun.lock": "bun", "package-lock.json": "npm" }, "default": "npm" },
+  "commands": {
+    "install": "{pm} install",
+    "typecheck": "npx --no-install tsc --noEmit",
+    "lint": "{pm} run lint --if-present",
+    "test": "{pm} test --if-present",
+    "coverage": "{pm} test -- --coverage",
+    "build": "{pm} run build --if-present",
+    "e2e": "npx --no-install playwright test",
+    "auditDeps": "osv-scanner scan source -r .",
+    "secrets": "gitleaks detect --redact --no-banner",
+    "sast": "semgrep scan --config p/default --error --quiet"
+  },
+  "coverageReport": "coverage/lcov.info",
+  "testFilePattern": "(\\.(test|spec)\\.[cm]?[jt]sx?$|__tests__/)",
+  "devServer": { "command": "{pm} run dev", "url": "http://localhost:3000" },
+  "qaSurfaces": ["browser", "api", "cli"]
+}

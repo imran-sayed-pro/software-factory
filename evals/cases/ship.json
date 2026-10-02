@@ -1,0 +1,16 @@
+{
+  "skill_name": "ship",
+  "trigger": {
+    "positive": [
+      { "prompt": "Ship it: open the PR for the done cards", "top_k": 1 },
+      { "prompt": "Merge the card and watch the deploy", "top_k": 1 },
+      { "prompt": "Release C-012 to production", "top_k": 1 },
+      { "prompt": "Roll back the last deploy", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Break this request into cards", "owner": "spec" },
+      { "prompt": "Start the workers", "owner": "dispatch" }
+    ]
+  },
+  "evals": []
+}

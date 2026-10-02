@@ -1,0 +1,16 @@
+{
+  "skill_name": "qa-verify",
+  "trigger": {
+    "positive": [
+      { "prompt": "QA this card in the browser", "top_k": 1 },
+      { "prompt": "Prove it works: record a demo of the fix", "top_k": 1 },
+      { "prompt": "Verify the feature end to end and capture evidence", "top_k": 1 },
+      { "prompt": "Test the running app and write a regression test for each bug you find", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Review the diff for security issues", "owner": "review-gate" },
+      { "prompt": "Watch the deploy and roll back if it breaks", "owner": "ship" }
+    ]
+  },
+  "evals": []
+}

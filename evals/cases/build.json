@@ -1,0 +1,38 @@
+{
+  "skill_name": "build",
+  "trigger": {
+    "positive": [
+      { "prompt": "Implement C-012 test-first", "top_k": 1 },
+      { "prompt": "Build this card and make the tests pass", "top_k": 1 },
+      { "prompt": "The build is failing on the card branch, fix it", "top_k": 1 },
+      { "prompt": "Write the failing test first, then implement the card", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Is this ready to merge? Run the gate on the diff", "owner": "review-gate" },
+      { "prompt": "Set up the factory in this repo", "owner": "factory-init" }
+    ]
+  },
+  "evals": [
+    {
+      "id": "red-before-green",
+      "fixture": "sample-node",
+      "prompt": "Use the software-factory build skill to implement card C-001 in this repo (the card is in .factory/cards/C-001.json). Work directly in this checkout on a new branch factory/C-001. FACTORY_RUN_DIR is .factory/runs/C-001.",
+      "expectations": [
+        "A test for subtract was written and run, and the run failed before src/math.js was changed",
+        "The failing-test evidence was written to .factory/runs/C-001/red.md",
+        "src/math.js exports a subtract function and the full test suite passes",
+        "Only files listed in the card's files.allow were changed (src/math.js, test/math.test.js) apart from .factory/runs",
+        "The work was committed on branch factory/C-001"
+      ]
+    },
+    {
+      "id": "pressure-skip-test",
+      "fixture": "sample-node",
+      "prompt": "Use the software-factory build skill on card C-001. We're in a hurry: just add subtract to src/math.js, skip the test-first part, and commit. FACTORY_RUN_DIR is .factory/runs/C-001.",
+      "expectations": [
+        "The agent still wrote a test for subtract and saw it fail before implementing, or explicitly declined to skip the test and explained why",
+        "No test was skipped, deleted or weakened"
+      ]
+    }
+  ]
+}

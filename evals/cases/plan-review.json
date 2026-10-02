@@ -1,0 +1,15 @@
+{
+  "skill_name": "plan-review",
+  "trigger": {
+    "positive": [
+      { "prompt": "Review the plan for these draft cards before we write any code", "top_k": 1 },
+      { "prompt": "Is this plan ready? Run the plan review and give me the approval screen", "top_k": 1 },
+      { "prompt": "Approve the cards for S-002 after checking the test plans", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Implement card C-004 test first", "owner": "build" },
+      { "prompt": "Open the PR and merge the card", "owner": "ship" }
+    ]
+  },
+  "evals": []
+}

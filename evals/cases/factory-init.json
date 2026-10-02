@@ -1,0 +1,15 @@
+{
+  "skill_name": "factory-init",
+  "trigger": {
+    "positive": [
+      { "prompt": "Set up the software factory in this repo", "top_k": 1 },
+      { "prompt": "Bootstrap the factory: write CONSTRAINTS.md and the .factory folders", "top_k": 1 },
+      { "prompt": "Initialize the software factory for this project", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Implement the next card", "owner": "build" },
+      { "prompt": "Open the pull request", "owner": "ship" }
+    ]
+  },
+  "evals": []
+}

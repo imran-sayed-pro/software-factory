@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "software-factory",
+  "description": "Agentic software factory skills, reviewer agents, hooks and runner.",
+  "owner": { "name": "Imran Sayed" },
+  "plugins": [
+    {
+      "name": "software-factory",
+      "version": "0.1.0",
+      "source": "./",
+      "description": "Spec → plan → parallel build → review → QA evidence → ship, with two human gates.",
+      "license": "MIT",
+      "keywords": ["factory", "agents", "tdd", "review", "qa", "ship", "worktrees"]
+    }
+  ]
+}

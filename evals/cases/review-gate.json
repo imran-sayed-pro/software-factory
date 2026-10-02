@@ -1,0 +1,27 @@
+{
+  "skill_name": "review-gate",
+  "trigger": {
+    "positive": [
+      { "prompt": "Review this diff before I merge it", "top_k": 1 },
+      { "prompt": "Is this ready to merge? Run the gate", "top_k": 1 },
+      { "prompt": "Can you do a proper code review of this change, even though I pasted the diff inline?", "top_k": 1 },
+      { "prompt": "Check this branch for skipped tests, suppressions and security issues", "top_k": 1 }
+    ],
+    "negative": [
+      { "prompt": "Test it in the browser and record a video", "owner": "qa-verify" },
+      { "prompt": "Write up a ticket for this idea", "owner": "spec" }
+    ]
+  },
+  "evals": [
+    {
+      "id": "blocks-skipped-test",
+      "fixture": "sample-node-skip",
+      "prompt": "Use the software-factory review-gate skill to review branch factory/C-001 against main for card C-001. FACTORY_RUN_DIR is .factory/runs/C-001.",
+      "expectations": [
+        "The floor guard was run and its finding about the skipped test was reported",
+        "The verdict is BLOCK, not APPROVE",
+        "A review record was written to .factory/runs/C-001/review.json"
+      ]
+    }
+  ]
+}
