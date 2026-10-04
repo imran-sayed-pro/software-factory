@@ -2,3 +2,5 @@ node_modules/
 evals/results/
 *.log
 .DS_Store
+video/build/
+__pycache__/

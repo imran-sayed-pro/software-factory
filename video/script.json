@@ -1,0 +1,41 @@
+{
+  "title": "Software Factory, explained",
+  "voice": { "id": "nPczCjzI2devNBz1zQrb", "name": "Brian (ElevenLabs stock voice; replace with any voice id)", "model": "eleven_multilingual_v2" },
+  "scenes": [
+    {
+      "id": "s1_hook",
+      "class": "Hook",
+      "text": "AI can write code faster than any team can review it. So the hard problem is no longer generating code. It's trusting the code you merge. This is a software factory: a pipeline for Claude Code that runs many AI workers in parallel, and still lets you trust what comes out. Let's see how it works."
+    },
+    {
+      "id": "s2_line",
+      "class": "TheLine",
+      "text": "Every change travels the same line. It starts as a spec, cut into small cards. Plan review checks each card before any code exists, and a human approves the plan. That's the first gate. Then dispatch hands each card to its own worker. The worker builds it, the review gate checks it, QA proves it in the running software, and ship opens a pull request. A human merges. That's the second gate. Everything between the two gates runs on its own."
+    },
+    {
+      "id": "s3_cards",
+      "class": "CardsInParallel",
+      "text": "Parallelism comes from cards. Each card declares exactly which files it may touch. Two cards whose files don't overlap run at the same time, each in its own git worktree. Cards that share a file take turns. Dependencies work the same way. A card that needs another card's work doesn't start when that card is finished. It starts when it's merged. Until then, unmerged work keeps its files locked."
+    },
+    {
+      "id": "s4_floor",
+      "class": "TestFirstAndFloor",
+      "text": "Inside a worker, the rule is test first. Before any code is written, the worker writes a test and watches it fail, for the right reason. Only then does it write the smallest change that makes it pass. And there's a floor. The quality bar lives in one file, every rule next to the command that checks it. A floor guard reads every diff and blocks the shortcuts: a skipped test, a deleted assertion, a silenced warning, or a rule quietly loosened."
+    },
+    {
+      "id": "s5_proof",
+      "class": "ProofBoundToCode",
+      "text": "Review runs fresh reviewer agents that never saw the author's reasoning. Their verdict is recorded together with a hash of the exact code they judged. QA works the same way. Change one line afterwards, and the hash no longer matches. The verdict is stale, and ship refuses it. Saying you reviewed it is never enough. The proof has to exist, and it has to match the code."
+    },
+    {
+      "id": "s6_story",
+      "class": "RealRun",
+      "text": "That rule paid off on the very first real run. Every unit test was green. But with real AI workers, it turned out the workers had never loaded the plugin. No skills, no safety hooks. One worker decided a three-line change didn't need review. The merge queue refused it: review missing. After the fix, three cards ran end to end. Two in parallel, a third waiting for a merge. About ninety seconds and eighty cents each, with no escalations."
+    },
+    {
+      "id": "s7_close",
+      "class": "Close",
+      "text": "So: speed comes from parallel workers. Trust comes from tests first, a floor that can't be lowered, and proof tied to the code. Two decisions stay human: approving the plan, and merging the code. Software factory is open source, on GitHub, at imran-sayed-pro slash software-factory."
+    }
+  ]
+}
