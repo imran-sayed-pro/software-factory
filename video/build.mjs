@@ -19,7 +19,8 @@ const opt = (name) => { const i = argv.indexOf(name); return i > -1 ? argv[i + 1
 const quality = opt('--quality') || 'h';
 const silent = argv.includes('--silent');
 const only = opt('--only')?.split(',');
-const manim = process.env.MANIM || 'manim';
+// Resolve a relative MANIM path now: scenes render with cwd set to video/, where it would not exist.
+const manim = process.env.MANIM?.includes('/') ? path.resolve(process.env.MANIM) : process.env.MANIM || 'manim';
 const run = (cmd, args, o = {}) => {
   const r = spawnSync(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', ...o });
   if (r.status !== 0) { console.error(`${cmd} failed:\n${(r.stderr || r.stdout || '').slice(-2000)}`); process.exit(1); }
