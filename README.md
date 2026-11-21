@@ -49,7 +49,7 @@ In the repository you want the factory to work on:
 | `factory-init` | Sets a repo up: quality bar, rulebook, `.factory/` folders, floor guard for CI |
 | `spec` | Idea → written spec → small, independent work cards |
 | `plan-review` | Plans, test plans and reviews per card; Gate 1 |
-| `dispatch` | Parallel workers in worktrees, stall/cost brakes, escalations, merge queue |
+| `dispatch` | Parallel workers in worktrees, stall/cost/session-usage brakes, escalations, merge queue |
 | `build` | One card, test-first, with recorded RED evidence |
 | `review-gate` | Floor guard, checks, scope check, parallel reviewer agents; verdict bound to the code |
 | `qa-verify` | Exercises the running software, writes a regression test, records evidence |
@@ -85,6 +85,31 @@ Worker settings live in `.factory/config.json` (`workers.max`, `command`, `stall
 `maxCostUsdPerCard`, `maxAttemptsPerCard`, `virtualDisplay`, `pricing`). The cost brake estimates
 spend from token usage while a worker runs, priced by `workers.pricing`; set it to your model's rates. A dependency counts as satisfied only
 once it is merged, and unmerged work keeps its files locked, so parallel cards never collide.
+
+### Session usage brake
+
+Optional, off by default (`workers.maxSessionUsagePercent: null`) in both existing configs and every
+new `factory-init` — turning it on takes a second step (below), so it never silently stops a factory
+that hasn't set that up. Set it to a percentage, e.g. `85`, and `dispatch` stops starting new workers
+once your Claude plan's usage window is at or past that percentage; already-running workers finish
+normally, nothing is killed. This tracks the account-level 5-hour/7-day limit Claude Code itself shows
+you (via `rate_limits` in [statusline JSON](https://code.claude.com/docs/en/statusline.md)), not a
+dollar estimate.
+
+There is no documented way for a headless `claude -p` worker to read that number itself, so once
+enabled, dispatch polls a snapshot file that a **live, rendering, interactive Claude Code session**
+keeps refreshed. Set this up once per machine, pointing that session's statusLine at the bundled
+capture script, in `~/.claude/settings.json` (or a project's `.claude/settings.json`):
+
+```json
+{ "statusLine": { "type": "command", "command": "node /abs/path/to/software-factory/scripts/statusline-capture.mjs" } }
+```
+
+Keep at least one such session open while `dispatch` runs. If the snapshot is missing or older than
+`workers.usageStatusMaxAgeMinutes` (default `10`) — nobody's statusLine has refreshed it recently —
+dispatch fails safe: it treats usage as unknown and holds back new starts, the same as being over the
+limit, rather than assuming it's fine. That also means dispatch starts nothing at all until the
+snapshot exists, so do the statusLine setup *before* turning `maxSessionUsagePercent` on, not after.
 
 ### What workers may run
 

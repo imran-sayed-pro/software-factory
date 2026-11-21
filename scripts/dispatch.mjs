@@ -21,7 +21,7 @@ import path from 'node:path';
 import {
   PLUGIN_ROOT, factoryRoot, factoryDir, git, parseArgs, readJSON, writeJSON, appendJSONL, readJSONL, nowIso, treeHash, die,
 } from './lib/common.mjs';
-import { scanUsage, costOf } from './lib/usage.mjs';
+import { scanUsage, costOf, readSessionUsagePercent, DEFAULT_USAGE_STATUS_FILE } from './lib/usage.mjs';
 import { workerAllowedTools, expandCommand, workerEnv } from './lib/permissions.mjs';
 import { loadCards, saveCard, validateCard, topoOrder, readyCards, pickLaunchable } from './lib/cards.mjs';
 
@@ -34,6 +34,11 @@ if (!fs.existsSync(configPath)) die('no .factory/config.json: run factory-init f
 const config = readJSON(configPath);
 const W = {
   max: 3, stallMinutes: 15, maxMinutesPerCard: 120, maxCostUsdPerCard: 15, maxAttemptsPerCard: 2, virtualDisplay: true,
+  // Opt-in, not a silent default: null here means off, so a repo that hasn't set this in
+  // .factory/config.json (every repo that ran factory-init before this brake existed) behaves exactly
+  // as before. factory-init writes 85 into *new* configs; existing ones keep working until a human
+  // chooses to add it (re-run factory-init, or edit config.json directly).
+  maxSessionUsagePercent: null, usageStatusFile: DEFAULT_USAGE_STATUS_FILE, usageStatusMaxAgeMinutes: 10,
   command: ['claude', '-p', '{prompt}', '--permission-mode', 'acceptEdits', '--output-format', 'stream-json', '--verbose', '--plugin-dir', '{pluginDir}', '--add-dir', '{runDir}', '--allowedTools', '{allowedTools}'],
   ...(config.workers || {}),
 };
@@ -223,7 +228,24 @@ function refresh(board, cards) {
   return rows;
 }
 
+// Fails safe: no reading, or one too old to trust, blocks new starts exactly like being over the
+// limit — the alternative is silently losing the brake the moment nobody's statusLine is refreshing it.
+function sessionUsageBrake() {
+  if (W.maxSessionUsagePercent == null) return { tripped: false };
+  const usage = readSessionUsagePercent(W.usageStatusFile, W.usageStatusMaxAgeMinutes);
+  const over = usage.ok && usage.percent >= W.maxSessionUsagePercent;
+  if (!usage.ok || over) {
+    return { tripped: true, why: usage.ok ? `at ${Math.round(usage.percent)}% of the session usage window (limit ${W.maxSessionUsagePercent}%)` : usage.reason };
+  }
+  return { tripped: false, why: `${Math.round(usage.percent)}% of the session usage window (limit ${W.maxSessionUsagePercent}%)` };
+}
+
 function startLaunchable(board, cards, { max, only, dry }) {
+  const brake = sessionUsageBrake();
+  if (brake.tripped) {
+    console.log(`wait *: session usage brake tripped (${brake.why}); not starting new workers`);
+    return 0; // running workers keep going; only new starts are held back
+  }
   const capacity = Math.max(0, Number(max || W.max) - Object.values(board.cards).filter((w) => w.state === 'running').length);
   let pool = cards;
   if (only) pool = cards.filter((c) => c.id === only || c.status !== 'ready');
@@ -324,11 +346,14 @@ switch (cmd) {
     const board = loadBoard();
     const ready = readyCards(cards);
     const running = Object.values(board.cards).filter((w) => w.state === 'running').length;
-    const { chosen, skipped } = pickLaunchable(cards, Math.max(0, W.max - running));
+    const brake = sessionUsageBrake();
+    const { chosen, skipped } = brake.tripped ? { chosen: [], skipped: [] } : pickLaunchable(cards, Math.max(0, W.max - running));
     console.log(`base ${base} · workers ${running}/${W.max} running · ${cards.length} cards`);
+    console.log(`session usage: ${brake.why}`);
     console.log(`order: ${order.join(' -> ') || '(none)'}`);
     console.log(`ready now: ${ready.map((c) => c.id).join(', ') || '(none)'}`);
-    console.log(`would start: ${chosen.map((c) => c.id).join(', ') || '(none)'}`);
+    if (brake.tripped) console.log(`would start: (none) — session usage brake tripped`);
+    else console.log(`would start: ${chosen.map((c) => c.id).join(', ') || '(none)'}`);
     for (const s of skipped) console.log(`waits: ${s.id} (${s.reason})`);
     for (const c of cards.filter((c) => c.status === 'ready' && !ready.includes(c))) console.log(`waits: ${c.id} (dependencies ${c.dependsOn.join(', ')})`);
     for (const c of cards) { const p = validateCard(c, cards); if (p.length && c.status !== 'draft') console.log(`invalid: ${c.id}: ${p.join('; ')}`); }
