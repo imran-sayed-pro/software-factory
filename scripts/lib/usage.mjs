@@ -3,8 +3,42 @@
 // the worker has exited, so a cost brake needs an estimate while it runs. Prices are per million tokens
 // and come from .factory/config.json (workers.pricing); the defaults are deliberately on the high side.
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 export const DEFAULT_PRICING = { inputPerMTok: 15, outputPerMTok: 75, cacheReadPerMTok: 1.5, cacheWritePerMTok: 18.75 };
+
+// Default home for the snapshot statusline-capture.mjs writes and this file reads back (see that
+// script's header). `.factory/config.json`'s `workers.usageStatusFile` can point elsewhere.
+export const DEFAULT_USAGE_STATUS_FILE = path.join(os.homedir(), '.claude', 'software-factory-usage.json');
+
+/**
+ * The account's Claude-plan usage window (5h/7d `rate_limits`, from
+ * https://code.claude.com/docs/en/statusline.md), as last captured by statusline-capture.mjs. There is
+ * no documented way for a headless `claude -p` worker to read this itself, so dispatch instead polls a
+ * file that a live, rendering, interactive session's statusLine keeps refreshed.
+ *
+ * Fails safe: a missing, unparsable, stale, or not-yet-populated snapshot is reported as "not ok", the
+ * same as being over the limit, rather than treated as "fine" — because the alternative is an orchestrator
+ * that silently stops protecting the account the moment nobody is watching.
+ */
+export function readSessionUsagePercent(file, maxAgeMinutes) {
+  let record;
+  try { record = JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch (e) {
+    return { ok: false, reason: e.code === 'ENOENT' ? `no usage snapshot at ${file} yet (see README: configure statusline-capture.mjs)` : `unreadable usage snapshot: ${e.message}` };
+  }
+  const ageMin = (Date.now() - new Date(record.capturedAt || 0).getTime()) / 60000;
+  if (!Number.isFinite(ageMin) || ageMin > maxAgeMinutes) {
+    return { ok: false, reason: `usage snapshot is ${Number.isFinite(ageMin) ? Math.round(ageMin) + 'm' : 'of unknown age'} old (no live session has refreshed it recently)` };
+  }
+  const rl = record.rate_limits || {};
+  const five = typeof rl.five_hour?.used_percentage === 'number' ? rl.five_hour.used_percentage : -1;
+  const week = typeof rl.seven_day?.used_percentage === 'number' ? rl.seven_day.used_percentage : -1;
+  const percent = Math.max(five, week);
+  if (percent < 0) return { ok: false, reason: 'usage snapshot has no rate_limits yet (first API response of that session has not landed)' };
+  return { ok: true, percent, five_hour: five < 0 ? null : five, seven_day: week < 0 ? null : week };
+}
 
 /**
  * Read the log from `state.offset`, fold every message's usage into `state.msgs` (keyed by message id,

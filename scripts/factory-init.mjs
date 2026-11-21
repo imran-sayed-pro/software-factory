@@ -5,6 +5,7 @@
 // and a "Software factory" section in CLAUDE.md. Existing CONSTRAINTS.md / DONE.md are never overwritten
 // unless --force (and even then CONSTRAINTS.md is backed up first).
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { workerAllowedTools } from './lib/permissions.mjs';
 import { PLUGIN_ROOT, checkoutRoot, git, parseArgs, writeJSON, die } from './lib/common.mjs';
@@ -40,6 +41,7 @@ const fill = (s) => s
   .replaceAll('{{date}}', new Date().toISOString().slice(0, 10))
   .replaceAll('{{profile}}', profile.name)
   .replaceAll('{{base}}', base)
+  .replaceAll('{{home}}', os.homedir())
   .replaceAll('{{coverage_today}}', 'not measured yet (run the coverage command, then record the number)')
   .replace(/\{\{(\w+)\}\}/g, (m, k) => profile.commands[k] ?? m);
 

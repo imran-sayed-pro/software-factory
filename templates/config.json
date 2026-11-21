@@ -9,7 +9,10 @@
     "maxCostUsdPerCard": 15,
     "pricing": { "inputPerMTok": 15, "outputPerMTok": 75, "cacheReadPerMTok": 1.5, "cacheWritePerMTok": 18.75 },
     "maxAttemptsPerCard": 2,
-    "virtualDisplay": true
+    "virtualDisplay": true,
+    "maxSessionUsagePercent": null,
+    "usageStatusFile": "{{home}}/.claude/software-factory-usage.json",
+    "usageStatusMaxAgeMinutes": 10
   },
   "brakes": {
     "maxFailedHypotheses": 3,
